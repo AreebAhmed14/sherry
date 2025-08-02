@@ -1,22 +1,59 @@
-from agents import Agent , Runner
+from agents import Agent , Runner , function_tool , RunContextWrapper
 from main import config
 import os
 import asyncio
+from dataclasses import dataclass
 
-def sherry(userq):
-    agent = Agent(
-        name = "Sherry",
-        instructions = os.getenv("sherry"),
+@dataclass
+class userInfo:
+    age : int
+    field : str
+    sibling : str
+    center_name : str
+    goal : str
+
+@function_tool
+async def age_tool(wrapper : RunContextWrapper[userInfo]):
+    return wrapper.context.age
+
+@function_tool
+async def field_tool(wrapper : RunContextWrapper[userInfo]):
+    return wrapper.context.field
+
+@function_tool
+async def sibling_tool(wrapper : RunContextWrapper[userInfo]):
+    return wrapper.context.sibling
+
+@function_tool
+async def center_name_tool(wrapper : RunContextWrapper[userInfo]):
+    return wrapper.context.center_name
+@function_tool
+async def plan(wrapper : RunContextWrapper[userInfo]):
+    return wrapper.context.goal
+
+async def main():
+
+    user_Info = userInfo(
+        age = 18,
+        field = "computer_science in 2025",
+        sibling = "one brother and one sister",
+        center_name = "Asian coaching center",
+        goal = "To do own business"
     )
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    result = loop.run_until_complete(
-            Runner.run(
-                agent,
-                input = str(userq),
-                run_config = config
-            ) 
-        )
+    agent = Agent[userInfo](
+            name = "Sherry",
+            instructions = os.getenv("sherry"),
+            tools = [age_tool , field_tool , sibling_tool , center_name_tool , plan]
+    )
 
-    return(result.final_output)
+    result = await Runner.run(
+                agent,
+                input = "tell shaheer school",
+                run_config = config,
+                context = user_Info
+            ) 
+
+    print(result.final_output)
+
+asyncio.run(main())
